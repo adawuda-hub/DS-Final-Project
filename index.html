@@ -1,0 +1,585 @@
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>D3 Test</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+  <h1>My D3 Project</h1>
+  <div id="chart"></div>
+
+  <script>
+    d3.csv("data.csv").then(data => {
+      console.log(data);
+      d3.select("#chart")
+        .append("p")
+        .text("D3 loaded the dataset! Rows: " + data.length);
+    });
+  </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gym Workout Performance Explorer</title>
+
+  <!-- D3 library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    header {
+      background: #1f2937;
+      color: white;
+      padding: 24px 32px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    header p {
+      max-width: 900px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding: 20px 32px;
+      background: white;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    select, input {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #bbb;
+      min-width: 170px;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 18px;
+      padding: 24px 32px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      padding: 18px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .axis-label {
+      font-size: 13px;
+      fill: #333;
+    }
+
+    .dot {
+      opacity: 0.75;
+      stroke: white;
+      stroke-width: 0.6;
+      cursor: pointer;
+    }
+
+    .dot:hover {
+      opacity: 1;
+      stroke: black;
+      stroke-width: 1.5;
+    }
+
+    .bar {
+      fill: #4b5563;
+      cursor: pointer;
+    }
+
+    .bar:hover {
+      fill: #111827;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.88);
+      color: white;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      line-height: 1.4;
+    }
+
+    .insight-box {
+      margin: 0 32px 28px;
+    }
+
+    .summary-text {
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Gym Workout Performance Explorer</h1>
+    <p>
+      This interactive D3 visualization explores the Kaggle Gym Members Exercise Dataset.
+      It helps answer how workout duration, workout type, heart rate, and experience level relate to calories burned.
+    </p>
+  </header>
+
+  <section class="controls">
+    <div class="control-group">
+      <label for="workoutFilter">Workout Type</label>
+      <select id="workoutFilter">
+        <option value="All">All</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="genderFilter">Gender</label>
+      <select id="genderFilter">
+        <option value="All">All</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="ageFilter">Age Range</label>
+      <select id="ageFilter">
+        <option value="All">All</option>
+        <option value="18-25">18-25</option>
+        <option value="26-35">26-35</option>
+        <option value="36-45">36-45</option>
+        <option value="46-60">46-60</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="durationFilter">Duration Range</label>
+      <select id="durationFilter">
+        <option value="All">All</option>
+        <option value="0-1">0-1 hour</option>
+        <option value="1-1.5">1-1.5 hours</option>
+        <option value="1.5-2">1.5-2 hours</option>
+        <option value="2-3">2+ hours</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="calorieFilter">Calories Range</label>
+      <select id="calorieFilter">
+        <option value="All">All</option>
+        <option value="0-400">0-400</option>
+        <option value="401-700">401-700</option>
+        <option value="701-1000">701-1000</option>
+        <option value="1001-2000">1000+</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="heartRateFilter">Heart Rate Range</label>
+      <select id="heartRateFilter">
+        <option value="All">All</option>
+        <option value="0-110">0-110 BPM</option>
+        <option value="111-130">111-130 BPM</option>
+        <option value="131-150">131-150 BPM</option>
+        <option value="151-250">151+ BPM</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <label for="searchBox">Search Workout</label>
+      <input id="searchBox" type="text" placeholder="Example: HIIT" />
+    </div>
+  </section>
+
+  <main class="dashboard">
+    <section class="card">
+      <h2>Workout Duration vs. Calories Burned</h2>
+      <p>Each dot represents one gym member/session. Color shows workout type.</p>
+      <svg id="scatterplot" viewBox="0 0 850 520"></svg>
+    </section>
+
+    <section class="card">
+      <h2>Average Calories by Workout Type</h2>
+      <p>This bar chart updates when filters are changed.</p>
+      <svg id="barChart" viewBox="0 0 430 520"></svg>
+    </section>
+  </main>
+
+  <section class="card insight-box">
+    <h2>Current View Summary</h2>
+    <div id="summary" class="summary-text"></div>
+  </section>
+
+  <div id="tooltip" class="tooltip"></div>
+
+  <script>
+    const scatterSvg = d3.select("#scatterplot");
+    const barSvg = d3.select("#barChart");
+    const tooltip = d3.select("#tooltip");
+    const summary = d3.select("#summary");
+
+    const scatterWidth = 850;
+    const scatterHeight = 520;
+    const scatterMargin = { top: 30, right: 30, bottom: 70, left: 80 };
+
+    const barWidth = 430;
+    const barHeight = 520;
+    const barMargin = { top: 30, right: 30, bottom: 70, left: 90 };
+
+    const color = d3.scaleOrdinal()
+      .range(["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#f97316", "#0891b2"]);
+
+    let allData = [];
+
+    // IMPORTANT:
+    // Your CSV file should be named exactly: data.csv
+    // Put data.csv in the same folder as index.html.
+    // This code uses your cleaned column names:
+    // age, gender, workout, duration, calories, heart_rate
+    d3.csv("data.csv", d => ({
+      age: +d.age,
+      gender: d.gender,
+      workout: d.workout,
+      duration: +d.duration,
+      calories: +d.calories,
+      heart_rate: +d.heart_rate
+    })).then(data => {
+      allData = data.filter(d =>
+        !isNaN(d.age) &&
+        d.gender &&
+        d.workout &&
+        !isNaN(d.duration) &&
+        !isNaN(d.calories) &&
+        !isNaN(d.heart_rate)
+      );
+
+      setupFilters(allData);
+      updateCharts();
+
+      d3.select("#workoutFilter").on("change", updateCharts);
+      d3.select("#genderFilter").on("change", updateCharts);
+      d3.select("#ageFilter").on("change", updateCharts);
+      d3.select("#durationFilter").on("change", updateCharts);
+      d3.select("#calorieFilter").on("change", updateCharts);
+      d3.select("#heartRateFilter").on("change", updateCharts);
+      d3.select("#searchBox").on("input", updateCharts);
+    }).catch(error => {
+      console.error("CSV loading error:", error);
+      summary.html(
+        "<strong>Data did not load.</strong><br>Make sure your file is named <code>data.csv</code>, placed in the same folder as <code>index.html</code>, and opened using VS Code Live Server."
+      );
+    });
+
+    function setupFilters(data) {
+      const workoutTypes = Array.from(new Set(data.map(d => d.workout))).sort();
+      const genders = Array.from(new Set(data.map(d => d.gender))).sort();
+      // Age, duration, calories, and heart rate filters use preset ranges in the HTML.
+    }
+
+    function getFilteredData() {
+      const selectedWorkout = d3.select("#workoutFilter").property("value");
+      const selectedGender = d3.select("#genderFilter").property("value");
+      const selectedAge = d3.select("#ageFilter").property("value");
+      const selectedDuration = d3.select("#durationFilter").property("value");
+      const selectedCalories = d3.select("#calorieFilter").property("value");
+      const selectedHeartRate = d3.select("#heartRateFilter").property("value");
+      const searchText = d3.select("#searchBox").property("value").toLowerCase().trim();
+
+      return allData.filter(d => {
+        const workoutMatch = selectedWorkout === "All" || d.workout === selectedWorkout;
+        const genderMatch = selectedGender === "All" || d.gender === selectedGender;
+        const ageMatch = selectedAge === "All" || inRange(d.age, selectedAge);
+        const durationMatch = selectedDuration === "All" || inRange(d.duration, selectedDuration);
+        const calorieMatch = selectedCalories === "All" || inRange(d.calories, selectedCalories);
+        const heartRateMatch = selectedHeartRate === "All" || inRange(d.heart_rate, selectedHeartRate);
+        const searchMatch = searchText === "" || d.workout.toLowerCase().includes(searchText);
+
+        return workoutMatch && genderMatch && ageMatch && durationMatch && calorieMatch && heartRateMatch && searchMatch;
+      });
+    }
+
+    function inRange(value, rangeText) {
+      const parts = rangeText.split("-").map(Number);
+      const min = parts[0];
+      const max = parts[1];
+      return value >= min && value <= max;
+    }
+
+    function updateCharts() {
+      const data = getFilteredData();
+      drawScatterplot(data);
+      drawBarChart(data);
+      updateSummary(data);
+    }
+
+    function drawScatterplot(data) {
+      scatterSvg.selectAll("*").remove();
+
+      const x = d3.scaleLinear()
+        .domain(d3.extent(data, d => d.duration)).nice()
+        .range([scatterMargin.left, scatterWidth - scatterMargin.right]);
+
+      const y = d3.scaleLinear()
+        .domain(d3.extent(data, d => d.calories)).nice()
+        .range([scatterHeight - scatterMargin.bottom, scatterMargin.top]);
+
+      scatterSvg.append("g")
+        .attr("transform", `translate(0, ${scatterHeight - scatterMargin.bottom})`)
+        .call(d3.axisBottom(x));
+
+      scatterSvg.append("g")
+        .attr("transform", `translate(${scatterMargin.left}, 0)`)
+        .call(d3.axisLeft(y));
+
+      scatterSvg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", scatterWidth / 2)
+        .attr("y", scatterHeight - 20)
+        .attr("text-anchor", "middle")
+        .text("Session Duration (hours)");
+
+      scatterSvg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -scatterHeight / 2)
+        .attr("y", 25)
+        .attr("text-anchor", "middle")
+        .text("Calories Burned");
+
+      color.domain(Array.from(new Set(allData.map(d => d.workout))));
+
+      scatterSvg.append("g")
+        .selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("class", "dot")
+        .attr("cx", d => x(d.duration))
+        .attr("cy", d => y(d.calories))
+        .attr("r", 5)
+        .attr("fill", d => color(d.workout))
+        .on("mouseover", function(event, d) {
+          tooltip
+            .style("opacity", 1)
+            .html(`
+              <strong>${d.workout}</strong><br>
+              Gender: ${d.gender}<br>
+              Age: ${d.age}<br>
+              Duration: ${d.duration} hours<br>
+              Calories: ${d.calories}<br>
+              Heart Rate: ${d.heart_rate}
+            `);
+        })
+        .on("mousemove", function(event) {
+          tooltip
+            .style("left", (event.pageX + 12) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.style("opacity", 0);
+        });
+
+      const legend = scatterSvg.append("g")
+        .attr("transform", `translate(${scatterWidth - 180}, 30)`);
+
+      const workoutTypes = color.domain();
+
+      legend.selectAll("circle")
+        .data(workoutTypes)
+        .enter()
+        .append("circle")
+        .attr("cx", 0)
+        .attr("cy", (d, i) => i * 22)
+        .attr("r", 6)
+        .attr("fill", d => color(d));
+
+      legend.selectAll("text")
+        .data(workoutTypes)
+        .enter()
+        .append("text")
+        .attr("x", 12)
+        .attr("y", (d, i) => i * 22 + 4)
+        .style("font-size", "12px")
+        .text(d => d);
+    }
+
+    function drawBarChart(data) {
+      barSvg.selectAll("*").remove();
+
+      const grouped = d3.rollups(
+        data,
+        v => d3.mean(v, d => d.calories),
+        d => d.workout
+      ).map(([workout, avgCalories]) => ({ workout, avgCalories }))
+       .sort((a, b) => d3.descending(a.avgCalories, b.avgCalories));
+
+      const x = d3.scaleBand()
+        .domain(grouped.map(d => d.workout))
+        .range([barMargin.left, barWidth - barMargin.right])
+        .padding(0.25);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(grouped, d => d.avgCalories) || 0]).nice()
+        .range([barHeight - barMargin.bottom, barMargin.top]);
+
+      barSvg.append("g")
+        .attr("transform", `translate(0, ${barHeight - barMargin.bottom})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .attr("transform", "rotate(-35)")
+        .style("text-anchor", "end");
+
+      barSvg.append("g")
+        .attr("transform", `translate(${barMargin.left}, 0)`)
+        .call(d3.axisLeft(y));
+
+      barSvg.selectAll("rect")
+        .data(grouped)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d.workout))
+        .attr("y", d => y(d.avgCalories))
+        .attr("width", x.bandwidth())
+        .attr("height", d => y(0) - y(d.avgCalories))
+        .attr("fill", d => color(d.workout))
+        .on("mouseover", function(event, d) {
+          tooltip
+            .style("opacity", 1)
+            .html(`
+              <strong>${d.workout}</strong><br>
+              Average Calories: ${d.avgCalories.toFixed(1)}
+            `);
+        })
+        .on("mousemove", function(event) {
+          tooltip
+            .style("left", (event.pageX + 12) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.style("opacity", 0);
+        });
+
+      barSvg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -barHeight / 2)
+        .attr("y", 25)
+        .attr("text-anchor", "middle")
+        .text("Average Calories Burned");
+    }
+
+    function updateSummary(data) {
+      if (data.length === 0) {
+        summary.html("No records match the current filters.");
+        return;
+      }
+
+      const avgCalories = d3.mean(data, d => d.calories);
+      const avgDuration = d3.mean(data, d => d.duration);
+      const avgBpm = d3.mean(data, d => d.heart_rate);
+
+      const topWorkout = d3.rollups(
+        data,
+        v => d3.mean(v, d => d.calories),
+        d => d.workout
+      ).sort((a, b) => d3.descending(a[1], b[1]))[0];
+
+      summary.html(`
+        <strong>Records shown:</strong> ${data.length}<br>
+        <strong>Average calories burned:</strong> ${avgCalories.toFixed(1)}<br>
+        <strong>Average workout duration:</strong> ${avgDuration.toFixed(2)} hours<br>
+        <strong>Average heart rate:</strong> ${avgBpm.toFixed(1)} BPM<br>
+        <strong>Highest average calorie workout in this view:</strong> ${topWorkout[0]} (${topWorkout[1].toFixed(1)} calories)
+      `);
+    }
+  </script>
+
+<hr style="margin:50px 0;">
+
+<section style="max-width:900px; margin:auto; padding:20px;">
+
+<h1>Documentation</h1>
+
+<h2>Design Process</h2>
+<p>
+The goal of this project was to explore how workout duration, workout type, and heart rate influence calories burned. I began by identifying key variables in the dataset and experimented with different layouts before deciding on a dashboard-style visualization. The design places filters at the top and charts below, allowing users to interact with the data easily.
+</p>
+
+<p>
+Initially, I considered using a single chart, but I realized that combining a scatterplot and bar chart would provide better insight. This approach allows users to both analyze relationships and compare categories.
+</p>
+
+<h2>Design Rationale</h2>
+<p>
+A scatterplot was chosen because it effectively shows the relationship between workout duration and calories burned. This helps users quickly identify trends and patterns. A bar chart was added to compare average calories burned across workout types, making differences between categories more visible.
+</p>
+
+<p>
+Color was used to distinguish workout types, and interactive filters were added to allow users to explore subsets of the data. Tooltips were implemented so users can view detailed information when hovering over points.
+</p>
+
+<h2>Insights & Findings</h2>
+<p>
+The visualization reveals a clear positive relationship between workout duration and calories burned. Longer sessions tend to result in higher calorie expenditure. Additionally, higher heart rates are associated with increased calorie burn, suggesting that workout intensity plays an important role.
+</p>
+
+<p>
+Different workout types show varying levels of efficiency in calorie burning. By using filters, users can explore how these patterns change across gender and age groups, providing deeper insight into workout performance.
+</p>
+
+<h2>Screenshots</h2>
+<img src="screenshot1.png" style="width:100%; margin-top:15px;">
+<img src="screenshot2.png" style="width:100%; margin-top:15px;">
+
+
+<h2>Video Demonstration</h2>
+<iframe width="560" height="315"
+src="https://www.youtube.com/embed/rgGMEzUs06s"
+frameborder="0" allowfullscreen>
+</iframe>
+
+</section>
+</body>
+</html>
